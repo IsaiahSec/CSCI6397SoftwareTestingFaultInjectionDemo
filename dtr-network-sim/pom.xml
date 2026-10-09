@@ -1,0 +1,81 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>edu.uca.csci6397</groupId>
+  <artifactId>dtr-network-sim</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <!--
+    Main sources are deliberately pure JDK — no runtime dependency at all — so the
+    simulation itself (normal_operations.sh / failure_case.sh) can be compiled and run
+    anywhere, including sandboxes with no access to Maven Central. JUnit and Mockito are
+    test-scope only, for fault_injection.sh's test-doubles suite, which this particular
+    sandbox could not actually execute (no route to Maven Central here) but which is a
+    normal `mvn test` on any machine that has one.
+  -->
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <junit.version>5.10.2</junit.version>
+    <mockito.version>5.11.0</mockito.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>dtr-network-sim</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+          <!-- Mockito's bytecode engine (Byte Buddy) only officially recognizes JDKs up
+               through the latest one at the time it shipped. On a newer JDK that it
+               hasn't been taught to recognize yet (e.g. a JetBrains-bundled JDK reporting
+               as Java 25), Byte Buddy refuses outright with "Java NN is not supported"
+               even though in practice it works fine. This flag is exactly what that error
+               message itself names as the fix: it tells Byte Buddy to proceed anyway on an
+               unrecognized-but-likely-compatible JDK, instead of hard-failing. -->
+          <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+        </configuration>
+      </plugin>
+      <!-- Lets `java -cp target/classes ... NormalOperationsMain` work without assembling
+           a jar — nothing to unpack since there are no runtime dependencies. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.1</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>edu.uca.csci6397.dtrsim.FailureCaseMain</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
